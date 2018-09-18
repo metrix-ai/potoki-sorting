@@ -21,6 +21,7 @@ sortAndSerializeVector =
       case result of
         Nothing -> return Nothing
         Just (path, vector) -> do
+          traceM (show $ GenericVector.length vector)
           (mutableVector :: GenericVector.Mutable Vector (PrimState IO) a ) <- GenericVector.unsafeThaw vector
           Algo.sort mutableVector
           orderedVector <- ((GenericVector.unsafeFreeze mutableVector) :: IO (Vector a))
@@ -29,7 +30,7 @@ sortAndSerializeVector =
 sortAndSerialize :: (Ord a, Serialize a) => Int -> FilePath -> Transform.Transform a (Either IOException FilePath)
 sortAndSerialize length dirPath = proc a -> do
   vectorOfA <- Transform.batch length -< a
-  filePath <- filePaths dirPath -< ()
+  filePath <- filePaths dirPath -< trace (show (GenericVector.length vectorOfA)) ()
   sortingResult <- sortAndSerializeVector -< (filePath, vectorOfA)
   returnA -< fmap (const filePath) sortingResult
 
