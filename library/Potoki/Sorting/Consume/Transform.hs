@@ -11,7 +11,6 @@ import qualified Potoki.Cereal.Consume as CerealConsume
 import qualified Data.Vector.Algorithms.Intro as Algo
 import qualified Potoki.Core.Fetch as A
 import qualified Data.Vector.Generic as GenericVector
-import Control.Monad.Primitive
 
 sortAndSerializeVector :: (Ord a, Serialize a) => Transform.Transform (FilePath {-^ Path to the file to serialize to -}, Vector a) (Either IOException ())
 sortAndSerializeVector =
@@ -22,7 +21,7 @@ sortAndSerializeVector =
         Nothing -> return Nothing
         Just (path, vector) -> do
           traceM (show $ GenericVector.length vector)
-          (mutableVector :: GenericVector.Mutable Vector (PrimState IO) a ) <- GenericVector.unsafeThaw vector
+          (mutableVector :: GenericVector.Mutable Vector RealWorld a) <- GenericVector.unsafeThaw vector
           Algo.sort mutableVector
           orderedVector <- ((GenericVector.unsafeFreeze mutableVector) :: IO (Vector a))
           (return . Just) =<< (IO.produceAndConsume (Produce.vector orderedVector) (CerealConsume.encodeToFile path))
