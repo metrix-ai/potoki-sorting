@@ -21,29 +21,36 @@ main =
   defaultMain $
   testGroup "sorting" $
   [ 
-    -- testProperty "sort" $ \ (list :: [Int]) ->
-    --   let l = (sort list)
-    --       len = ceiling $ (fromIntegral $ length list) / 5
-    --       path = "./temp"
-    --   -- in l === unsafePerformIO (IO.produceAndTransformAndConsume (Produce.list list) (Sort.sort len path) Consume.list)
-    --   in monadicIO $ do
-    --     eithers <- run $ (IO.produceAndTransformAndConsume (Produce.list list) (Sort.sort len path) Consume.list)
-    --     run $ print eithers
-    --     M.assert True
-    --     -- case sequence eithers of
-    --     --   Left error -> M.assert True --run $ print error
-    --     --   Right eithersText ->
-    --     --     case sequence eithersText of
-    --     --       Left text -> 
-    --     --         M.assert True--run $ print text
-    --     --       Right sortList -> M.assert $ True
-    -- , 
+    testProperty "sort" $ \ (list :: [Int]) ->
+      let ordList = (sort list)
+          len = ceiling $ (fromIntegral $ length list) / 5
+          path = "./temp"
+      in monadicIO $ do
+        eithers <- run $ (IO.produceAndTransformAndConsume (Produce.list list) (Sort.sort len path) Consume.list)
+        if eithers == []
+          then M.assert $ [] == list
+          else                    
+            case sequence eithers of
+                Left error -> M.assert $ (show error) == ""
+                Right eithersText ->
+                  case sequence eithersText of
+                    Left text -> M.assert $ text == ""
+                    Right sortList -> M.assert $ ordList == sortList
+    , 
     testCase "sortCase" $ do
       let list = [10,9,8,7,6,5,4,3,2,1] :: [Int]
           len = ceiling $ (fromIntegral $ length list) / 5
           path = "./temp"
+          ordList = sort list
       print list
-      res <- (IO.produceAndTransformAndConsume (Produce.list list) (Sort.sort len path) Consume.list)
-      print res
-      assertEqual "" True True
+      eithers <- (IO.produceAndTransformAndConsume (Produce.list list) (Sort.sort len path) Consume.list)
+      if eithers == []
+        then assertEqual "" [] list
+        else                    
+          case sequence eithers of
+              Left error -> assertEqual "" (show error) ""
+              Right eithersText ->
+                case sequence eithersText of
+                  Left text -> assertEqual "" text ""
+                  Right sortList -> assertEqual "" ordList sortList
   ]
