@@ -34,9 +34,13 @@ sortAndSerialize length dirPath = proc a -> do
 
 index :: Transform a Int
 index = 
-  Transform $ \ (A.Fetch _) -> M.Acquire $ do
+  Transform $ \ (A.Fetch fetchIO) -> M.Acquire $ do     
     indexRef <- newIORef 0
     return $ (, return ()) $ A.Fetch $ do
+      result <- fetchIO
+      case result of
+        Nothing -> return Nothing
+        Just _ -> do            
       number <- readIORef indexRef
       writeIORef indexRef (succ number)
       return $ Just number
