@@ -18,31 +18,14 @@ consumeAndProduce :: Consume.Consume input [Either a1 a]
      -> ([a] -> Produce.Produce (Either a1 b))
      -> Transform.Transform input (Either a1 b)
 consumeAndProduce (Consume.Consume consume) produce =
-  Transform.Transform $ \ (A.Fetch fetchIO) -> M.Acquire $ do
-    actionRef <- newIORef Nothing
-    let transformFetch = A.Fetch $ do
-          result <- fetchIO
-          case result of
-            Nothing -> 
-              return Nothing
-            Just elem -> do
-              either <- consume $ A.Fetch $ return $ Just elem
-              case sequence either of
-                Left error -> return $ Just $ Left $ error
-                Right paths -> do
-                  let (Produce.Produce fetchAndFinishAcquire) = produce paths
-                      (M.Acquire fetchAndFinishIO) = fetchAndFinishAcquire 
-                  (A.Fetch fetch, finish) <- fetchAndFinishIO
-                  writeIORef actionRef (Just finish)
-                  fetch
-        transformFinish = do
-          action <- readIORef actionRef
-          case action of
-            Nothing -> return ()
-            Just produceFinish -> do
-              writeIORef actionRef Nothing
-              produceFinish
-    return $ (transformFetch, transformFinish)
+  Transform.Transform $ \ (A.Fetch fetchIO) -> M.Acquire $ do    
+    either <- consume $ (A.Fetch fetchIO)
+    case sequence either of
+      Left error -> return (A.Fetch $ return $ Just $ Left $ error, return ())
+      Right paths -> do
+        let (Produce.Produce fetchAndFinishAcquire) = produce paths
+            (M.Acquire fetchAndFinishIO) = fetchAndFinishAcquire
+        fetchAndFinishIO
 
 sort :: (Ord a, Serialize a) => Int -> FilePath -> Transform.Transform a (Either IOException (Either Text a))
 sort length dirPath = consumeAndProduce (SortConsume.sortAndSerializeConsume length dirPath) SortProduce.readOrderedFromFiles

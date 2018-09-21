@@ -1,7 +1,6 @@
 module Potoki.Sorting.Prelude
 ( 
   module Exports,
-  ioChunkSize,
   textString,
   unsnoc,
   mapLeft,
@@ -111,10 +110,6 @@ import Data.Time as Exports
 -------------------------
 import Data.Hashable as Exports (Hashable)
 
--- primitive
--------------------------
-import Data.Primitive as Exports
-
 -- cereal
 -------------------------
 import Data.Serialize as Exports (Serialize)
@@ -122,11 +117,6 @@ import Data.Serialize as Exports (Serialize)
 --------------------------------------------------------------------------------
 
 import qualified Data.Text as A
-
-{-# NOINLINE ioChunkSize #-}
-ioChunkSize :: Int
-ioChunkSize =
-  shiftL 2 12
 
 textString :: Text -> String
 textString =
