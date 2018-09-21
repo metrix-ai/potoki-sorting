@@ -11,6 +11,7 @@ import qualified Potoki.Cereal.Consume as CerealConsume
 import qualified Data.Vector.Algorithms.Intro as Algo
 import qualified Potoki.Core.Fetch as A
 import qualified Data.Vector.Generic as GenericVector
+import System.Directory
 
 sortAndSerializeVector :: (Ord a, Serialize a) => Transform (FilePath {-^ Path to the file to serialize to -}, Vector a) (Either IOException ())
 sortAndSerializeVector =
@@ -19,7 +20,7 @@ sortAndSerializeVector =
       result <- fetchVectorIO
       case result of
         Nothing -> return Nothing
-        Just (path, vector) -> do
+        Just (path, vector) -> do   
           (mutableVector :: GenericVector.Mutable Vector RealWorld a) <- GenericVector.unsafeThaw vector
           Algo.sort mutableVector
           orderedVector <- ((GenericVector.unsafeFreeze mutableVector) :: IO (Vector a))
@@ -29,6 +30,7 @@ sortAndSerialize :: (Ord a, Serialize a) => Int -> FilePath -> Transform a (Eith
 sortAndSerialize length dirPath = proc a -> do
   vectorOfA <- batch length -< a
   filePath <- filePaths dirPath -< ()
+  mapInIO (\_ -> createDirectoryIfMissing False dirPath) -< ()
   sortingResult <- sortAndSerializeVector -< (filePath, vectorOfA)
   returnA -< fmap (const filePath) sortingResult
 
@@ -41,9 +43,9 @@ index =
       case result of
         Nothing -> return Nothing
         Just _ -> do            
-      number <- readIORef indexRef
-      writeIORef indexRef (succ number)
-      return $ Just number
+          number <- readIORef indexRef
+          writeIORef indexRef (succ number)
+          return $ Just number
 
 filePaths :: FilePath -> Transform a FilePath
 filePaths dirPath = rmap indexToPath index where

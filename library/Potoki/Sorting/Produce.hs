@@ -19,4 +19,4 @@ readOrderedFromFiles paths =
         ordBy (Right (Right a)) (Right (Right b)) = a <= b
 
         dirPath = dropWhileEnd (/= '/') $ head paths
-        emptyProduce = Produce.Produce $ M.Acquire $ return $ (empty, removeDirectory dirPath)  
+        emptyProduce = Produce.Produce $ M.Acquire $ return $ (empty, removePathForcibly dirPath)  
