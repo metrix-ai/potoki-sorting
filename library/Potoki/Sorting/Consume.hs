@@ -9,3 +9,8 @@ sortAndSerializeConsume :: (Ord a, Serialize a) => Int -> FilePath -> Consume.Co
 sortAndSerializeConsume length dirPath =
   Consume.transform (SortTransform.sortAndSerialize length dirPath) $
   Consume.list
+
+sortAndSerializeConsumeExplicity :: (Serialize a) => (a -> a -> Ordering) -> Int -> FilePath -> Consume.Consume a [Either IOException FilePath]
+sortAndSerializeConsumeExplicity ord length dirPath =
+  Consume.transform (SortTransform.sortAndSerializeExplicity ord length dirPath) $
+  Consume.list

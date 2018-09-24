@@ -1,6 +1,7 @@
 module Potoki.Sorting.Transform
 (
   sort,
+  sortExplicitly,
 )
 where
 
@@ -29,3 +30,6 @@ consumeAndProduce (Consume.Consume consume) produce =
 
 sort :: (Ord a, Serialize a) => Int -> FilePath -> Transform.Transform a (Either IOException (Either Text a))
 sort length dirPath = consumeAndProduce (SortConsume.sortAndSerializeConsume length dirPath) SortProduce.readOrderedFromFiles
+
+sortExplicitly :: (Serialize a) => (a -> a -> Ordering) -> Int -> FilePath -> Transform.Transform a (Either IOException (Either Text a))
+sortExplicitly ord length dirPath = consumeAndProduce (SortConsume.sortAndSerializeConsumeExplicity ord length dirPath) (SortProduce.readOrderedFromFilesExplicitly ord)

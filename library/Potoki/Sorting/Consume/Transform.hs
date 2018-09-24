@@ -26,12 +26,33 @@ sortAndSerializeVector =
           orderedVector <- ((GenericVector.unsafeFreeze mutableVector) :: IO (Vector a))
           (return . Just) =<< (IO.produceAndConsume (Produce.vector orderedVector) (CerealConsume.encodeToFile path))
 
+sortAndSerializeVectorExplicity :: (Serialize a) => (a -> a -> Ordering) -> Transform (FilePath {-^ Path to the file to serialize to -}, Vector a) (Either IOException ())
+sortAndSerializeVectorExplicity ord =
+  Transform $ \ (A.Fetch fetchVectorIO) -> M.Acquire $ do
+    return $ (, return ()) $ A.Fetch $ do
+      result <- fetchVectorIO
+      case result of
+        Nothing -> return Nothing
+        Just (path, vector) -> do   
+          (mutableVector :: GenericVector.Mutable Vector RealWorld a) <- GenericVector.unsafeThaw vector
+          Algo.sortBy ord mutableVector
+          orderedVector <- ((GenericVector.unsafeFreeze mutableVector) :: IO (Vector a))
+          (return . Just) =<< (IO.produceAndConsume (Produce.vector orderedVector) (CerealConsume.encodeToFile path))
+
 sortAndSerialize :: (Ord a, Serialize a) => Int -> FilePath -> Transform a (Either IOException FilePath)
 sortAndSerialize length dirPath = proc a -> do
   vectorOfA <- batch length -< a
   filePath <- filePaths dirPath -< ()
   mapInIO (\_ -> createDirectoryIfMissing False dirPath) -< ()
   sortingResult <- sortAndSerializeVector -< (filePath, vectorOfA)
+  returnA -< fmap (const filePath) sortingResult
+
+sortAndSerializeExplicity :: (Serialize a) => (a -> a -> Ordering) -> Int -> FilePath -> Transform a (Either IOException FilePath)
+sortAndSerializeExplicity ord length dirPath = proc a -> do
+  vectorOfA <- batch length -< a
+  filePath <- filePaths dirPath -< ()
+  mapInIO (\_ -> createDirectoryIfMissing False dirPath) -< ()
+  sortingResult <- (sortAndSerializeVectorExplicity ord) -< (filePath, vectorOfA)
   returnA -< fmap (const filePath) sortingResult
 
 index :: Transform a Int

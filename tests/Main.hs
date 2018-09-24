@@ -53,4 +53,27 @@ main =
                 case sequence eithersText of
                   Left text -> assertEqual "" text ""
                   Right sortList -> assertEqual "" ordList sortList
+    ,
+    testProperty "sortExplicitly" $ \ (list :: [Int]) ->
+      let ordList = (sort list)
+          len = ceiling $ (fromIntegral $ length list) / 5
+          path = "./temp"
+          ord = (\a b -> 
+            if a < b 
+              then LT
+              else 
+                if a > b 
+                  then GT
+                  else EQ)
+      in monadicIO $ do
+        eithers <- run $ (IO.produceAndTransformAndConsume (Produce.list list) (Sort.sortExplicitly ord len path) Consume.list)
+        if eithers == []
+          then M.assert $ [] == list
+          else                    
+            case sequence eithers of
+                Left error -> M.assert $ (show error) == ""
+                Right eithersText ->
+                  case sequence eithersText of
+                    Left text -> M.assert $ text == ""
+                    Right sortList -> M.assert $ ordList == sortList
   ]
